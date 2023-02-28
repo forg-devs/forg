@@ -15,7 +15,8 @@ class PreviewDialog(QDialog):
         model = QStandardItemModel(self.listView)
         self.setWindowTitle(title)
         for file in conditions.files:
-            standardItem = QStandardItem(file)
+            fi = QFileInfo(file)
+            standardItem = QStandardItem(fi.fileName())
             model.appendRow(standardItem)
         self.listView.setModel(model)
 
