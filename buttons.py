@@ -26,7 +26,10 @@ def add_folder_clicked():
 
 def resume_pause_clicked(dry_run):
     database.retrieve_values()
-    conditions.conditions_applied(dry_run)
+    todo = conditions.get_files()
+    if not dry_run:
+        for file, action in todo.items():
+            conditions.run_task(action, file)
 
 
 def save_button_clicked():

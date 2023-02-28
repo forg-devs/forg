@@ -111,12 +111,14 @@ def insertCondition(value):
         return False
 
 
-def retrieve_values():
+def retrieve_values(rule = None):
+    if rule is None:
+        rule = selected_rule
     con = sql_connection()
     global retrieved_list
     try:
         cursor = con.cursor()
-        cursor.execute('SELECT * FROM CONDITIONS WHERE Rule = ?', [selected_rule])
+        cursor.execute('SELECT * FROM CONDITIONS WHERE Rule = ?', [rule])
         for row in cursor.fetchall():
             row = str(row)[1:-1]
             retrieved_list.clear()
@@ -187,3 +189,28 @@ def init_database():
     folder_table(con)
     rule_table(con)
     condition_table(con)
+
+# For background helper
+def get_folders_list():
+    con = sql_connection()
+    try:
+        cursor = con.cursor()
+        cursor.execute('SELECT Folder_Path FROM FOLDER')
+        list_without_tuples = []
+        for path in cursor.fetchall():
+            list_without_tuples.append(str(path)[2:-3])
+        return list_without_tuples
+    except Error as er:
+        print(er)
+
+def get_rules_list(f_path):
+    con = sql_connection()
+    try:
+        cursor = con.cursor()
+        cursor.execute('SELECT Rule_Name FROM Rule WHERE F_ID = (SELECT ID FROM FOLDER WHERE Folder_Path = ?) AND State = (2)', [f_path])
+        list_without_tuples = []
+        for path in cursor.fetchall():
+            list_without_tuples.append(str(path)[2:-3])
+        return list_without_tuples
+    except Error as er:
+        print(er)

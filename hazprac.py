@@ -413,11 +413,11 @@ class Window(QWidget):
         def show_preview():
             buttons.resume_pause_clicked(True)
             msg = "List of files that satisfy the condition"
-            dial = preview.PreviewDialog("Preview Rule", msg, conditions.files)
+            dial = preview.PreviewDialog("Preview Rule", msg, conditions.filtered_files)
             # It will show dialog and pause the code execution until dialog is closed
             # using dial.open() is recommended in documention but it doesn't work for me.
             dial.exec_()
-            conditions.files.clear()
+            conditions.filtered_files.clear()
 
         preview_button.clicked.connect(show_preview)
 
