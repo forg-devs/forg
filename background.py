@@ -46,14 +46,13 @@ class QueueManager(object):
                     dir = file_info.dir().path()
                     print("DIR: ", dir)
                     list_of_active_rules = database.get_rules_list(dir)
-                    conditions.original_path = dir
                     for rule in list_of_active_rules:
-                        database.retrieve_values(rule)
+                        rule_conditions = database.retrieve_values(dir, rule)
                         print("Active rule: {}".format(rule))
-                        todo = conditions.get_files()
+                        todo, _ = conditions.get_files(rule_conditions)
                         if file in todo:
-                            action = todo[file]
-                            conditions.run_task(action, file)
+                            action = todo[file][0]
+                            conditions.run_task(rule_conditions, action, file)
 
                     #### INSERT CODE HERE TO DO WORK ####
 

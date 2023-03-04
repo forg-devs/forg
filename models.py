@@ -36,7 +36,7 @@ class RuleTableModel(QSqlTableModel):
         return QSqlTableModel.setData(self, index, value, role)
 
 
-class FolderTable(QSqlTableModel):
+class FolderTableModel(QSqlTableModel):
 
     def data(self, index, role):
         if role == Qt.DecorationRole:

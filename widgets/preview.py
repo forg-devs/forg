@@ -14,7 +14,7 @@ class PreviewDialog(QDialog):
         form.addRow(self.listView)
         model = QStandardItemModel(self.listView)
         self.setWindowTitle(title)
-        for file in conditions.filtered_files:
+        for file in items:
             fi = QFileInfo(file)
             standardItem = QStandardItem(fi.fileName())
             model.appendRow(standardItem)

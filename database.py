@@ -1,21 +1,11 @@
 import sqlite3
 from sqlite3 import Error
 import conditions
+from PyQt5.QtSql import QSqlDatabase
+from rule_conditions import RuleConditions
 
-selected_rule = ''
-selected_folder = ''
+
 retrieved_list = []
-
-
-def getSelectedRule(rule):
-    global selected_rule
-    selected_rule = rule.data()
-
-
-def getSelectedFolder(folder):
-    global selected_folder
-    selected_folder = folder.data()
-
 
 def sql_connection():
     try:
@@ -23,6 +13,7 @@ def sql_connection():
         return con
     except Error as er:
         print(er)
+
 
 
 def folder_table(con):
@@ -64,11 +55,10 @@ def sql_insert(con, values):
         return False
 
 
-def get_folder_id():
+def get_folder_id(folder_path=None):
     conn = sql_connection()
-    folder_name = selected_folder
     c = conn.cursor()
-    c.execute('select ID from FOLDER where Folder_Name = ?', [folder_name])
+    c.execute('select ID from FOLDER where Folder_Path = ?', [folder_path])
     folder_id = c.fetchone()
     folder_id = str(folder_id)[1:-2]
     return folder_id
@@ -99,7 +89,6 @@ def condition_table(con):
 
 
 def insertCondition(value):
-    value = value.data()
     con = sql_connection()
     try:
         cursor = con.cursor()
@@ -111,45 +100,47 @@ def insertCondition(value):
         return False
 
 
-def retrieve_values(rule = None):
-    if rule is None:
-        rule = selected_rule
+def retrieve_values(path, rule):
     con = sql_connection()
-    global retrieved_list
+    retrieved_list = []
     try:
         cursor = con.cursor()
         cursor.execute('SELECT * FROM CONDITIONS WHERE Rule = ?', [rule])
         for row in cursor.fetchall():
             row = str(row)[1:-1]
-            retrieved_list.clear()
             retrieved_list.append(row)
         retrieved_list = retrieved_list[0].split(",")
-        conditions.rule_name = retrieved_list[0][1:-1]
-        conditions.condition_value = retrieved_list[1][2:-1]
-        conditions.operator_value = retrieved_list[2][2:-1]
-        conditions.size_value = retrieved_list[3][1:]
-        conditions.ext_value = retrieved_list[4][2:-1]
-        conditions.date_edit_value = retrieved_list[5][2:-1]
-        conditions.unit_value = retrieved_list[6][2:-1]
-        conditions.actions_value = retrieved_list[7][2:-1]
-        conditions.target_path = retrieved_list[8][2:-1]
-        conditions.rename_value = retrieved_list[9][2:-1]
+        rule_name = retrieved_list[0][1:-1]
+        condition_value = retrieved_list[1][2:-1]
+        operator_value = retrieved_list[2][2:-1]
+        size_value = retrieved_list[3][1:]
+        ext_value = retrieved_list[4][2:-1]
+        date_edit_value = retrieved_list[5][2:-1]
+        unit_value = retrieved_list[6][2:-1]
+        actions_value = retrieved_list[7][2:-1]
+        target_path = retrieved_list[8][2:-1]
+        rename_value = retrieved_list[9][2:-1]
+        rule_conditions = RuleConditions(rule_name, condition_value, operator_value, size_value,
+            ext_value, date_edit_value, unit_value, actions_value, path, target_path, rename_value)
+        con.commit()
+        return rule_conditions
     except Error as er:
         print(er)
     finally:
-        con.commit()
+        con.close()
 
 
-def remove_folder():
+
+def remove_folder(selected_folder):
     con = sql_connection()
     try:
         if selected_folder:
             cursor = con.cursor()
             cursor.execute('DELETE FROM CONDITIONS WHERE Rule IN (SELECT Rule_Name FROM RULE WHERE F_ID IN (SELECT ID '
-                           'FROM FOLDER WHERE Folder_Name = ?))', [selected_folder])
-            cursor.execute('DELETE FROM RULE WHERE F_ID IN (SELECT ID FROM FOLDER WHERE Folder_Name = ?)',
+                           'FROM FOLDER WHERE Folder_Path = ?))', [selected_folder])
+            cursor.execute('DELETE FROM RULE WHERE F_ID IN (SELECT ID FROM FOLDER WHERE Folder_Path = ?)',
                            [selected_folder])
-            cursor.execute('DELETE FROM FOLDER WHERE Folder_Name = ?', [selected_folder])
+            cursor.execute('DELETE FROM FOLDER WHERE Folder_Path = ?', [selected_folder])
             return True
         else:
             return False
@@ -159,7 +150,7 @@ def remove_folder():
         con.commit()
 
 
-def remove_rule():
+def remove_rule(selected_rule):
     con = sql_connection()
     try:
         cursor = con.cursor()
@@ -171,7 +162,7 @@ def remove_rule():
         con.commit()
 
 
-def update_condition_rule(name):
+def update_condition_rule(selected_rule, name):
     con = sql_connection()
     try:
         cursor = con.cursor()
@@ -189,6 +180,13 @@ def init_database():
     folder_table(con)
     rule_table(con)
     condition_table(con)
+
+
+def setup_database(self):
+        init_database()
+        db = QSqlDatabase.addDatabase("QSQLITE")
+        db.setDatabaseName("database.db")
+        db.open()
 
 # For background helper
 def get_folders_list():

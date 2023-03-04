@@ -3,8 +3,8 @@ from PyQt5.QtCore import *
 import conditions
 import database
 
+
 def add_folder_clicked():
-    global folder_inserted
     folder_path = QFileDialog.getExistingDirectory()
     # folder_path will be a empty string if no directory is choosen,
     # and an empty string evaluates to false in python
@@ -16,7 +16,6 @@ def add_folder_clicked():
         values = (selected_folder, str(folder_path))
         if database.sql_insert(conn, values):
             # After insertion of a folder, no folder will be selected
-            database.selected_folder = ''
             return True
             print("F Records Inserted")
         else:
@@ -24,21 +23,20 @@ def add_folder_clicked():
             print("F Records not Inserted")
 
 
-def resume_pause_clicked(dry_run):
-    database.retrieve_values()
-    todo = conditions.get_files()
+def resume_pause_clicked(dry_run, path, rule):
+    rule_conditions = database.retrieve_values(path, rule)
+    todo, file_paths = conditions.get_files(rule_conditions)
     if not dry_run:
-        for file, action in todo.items():
-            conditions.run_task(action, file)
-
-
-def save_button_clicked():
-    pass
+        for file, values in todo.items():
+            action = values[0]
+            category = values[1]
+            print(file)
+            print(action)
+            conditions.run_task(rule_conditions, action, file)
+        return list()
+    else:
+        return file_paths
 
 
 def remove_folder_button_clicked():
     return database.remove_folder()
-
-
-def remove_rule_button_clicked():
-    database.remove_rule()

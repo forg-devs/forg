@@ -4,18 +4,6 @@ import datetime
 import sys
 import decimal
 
-rule_name = ''
-condition_value = ''  # combobox_value
-operator_value = ''   # combobox1_value
-size_value = ''
-ext_value = ''
-date_edit_value = ''
-unit_value = ''
-actions_value = ''
-original_path = r''
-target_path = r''
-rename_value = ''
-filtered_files = []
 
 # https://stackoverflow.com/a/14996816
 suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
@@ -53,78 +41,92 @@ def human_size(n_bytes):
 
     return float(result)
 
+def get_file_category(file_path):
+    ext = os.path.splitext(file_path)[1]
+    if ext in ['.jpg', '.png', '.gif', '.bmp']:
+        return 'Images'
+    elif ext in ['.pdf', '.doc', '.txt', '.xlsx']:
+        return 'Documents'
+    elif ext in ['.mp4', '.avi', '.wmv', '.mov']:
+        return 'Videos'
+    elif ext in ['.mp3', '.flac', '.ogg', '.aac', '.opus']:
+        return 'Music'
+    else:
+        return 'Other'
 
-def get_files():
+def get_files(rc):
     todo = {}
-    filtered_files.clear()
-    for subdir, dirs, files in os.walk(original_path):
+    file_paths = []
+    for subdir, dirs, files in os.walk(rc.original_path):
         for file in files:
             file_path = os.path.join(subdir, file)
-            if condition_value == 'Extension':
-                if operator_value == 'is':
-                    if file_path.endswith(ext_value):
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
-                elif operator_value == 'is not':
-                    if file_path.endswith(ext_value):
+            file_category = get_file_category(file_path)
+
+            if rc.condition_value == 'Extension':
+                if rc.operator_value == 'is':
+                    if file_path.endswith(rc.ext_value):
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
+                elif rc.operator_value == 'is not':
+                    if file_path.endswith(rc.ext_value):
                         pass
                     else:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
 
-            elif condition_value == 'Date Added':
-                dt = datetime.datetime.strptime(date_edit_value, '%Y-%m-%d')
+            elif rc.condition_value == 'Date Added':
+                dt = datetime.datetime.strptime(rc.date_edit_value, '%Y-%m-%d')
                 new_dt = int(dt.strftime('%Y%m%d'))
                 file_date = int(datetime.datetime.fromtimestamp(os.path.getctime(file_path)).strftime('%Y%m%d'))
-                if operator_value == 'is':
+                if rc.operator_value == 'is':
                     if new_dt == file_date:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
-                if operator_value == 'is before':
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
+                if rc.operator_value == 'is before':
                     if new_dt > file_date:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
-                if operator_value == 'is after':
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
+                if rc.operator_value == 'is after':
                     if new_dt < file_date:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
 
-            elif condition_value == 'Size':
+            elif rc.condition_value == 'Size':
                 global size_value
                 size_value = float(size_value)
-                if operator_value == 'is':
+                if rc.operator_value == 'is':
                     size_of_file = human_size(os.path.getsize(file_path))
                     print("Calculated size of file: {}".format(size_of_file))
                     print("Size given in condition: {}".format(size_value))
                     if size_of_file == size_value == 0:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
+                        file_paths.append(file)
                     elif size_of_file == size_value:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
-                elif operator_value == 'greater than':
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
+                elif rc.operator_value == 'greater than':
                     size_of_file = human_size(os.path.getsize(file_path))
                     if size_of_file > size_value:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
-                elif operator_value == 'less than':
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
+                elif rc.operator_value == 'less than':
                     size_of_file = human_size(os.path.getsize(file_path))
                     if size_of_file < size_value:
-                        filtered_files.append(file)
-                        todo[file_path] = actions_value
+                        file_paths.append(file)
+                        todo[file_path] = (rc.actions_value, file_category)
 
-    return todo
+    return todo, file_paths
 
 
-def run_task(action_performed, file_to_process):  # file_to process == a
-    global target_path
+def run_task(rc, action_performed, file_to_process):  # file_to process == a
     if action_performed == 'Copy':
-        actions.copy(file_to_process, target_path)
+        actions.copy(file_to_process, rc.target_path)
     elif action_performed == 'Move':
-        actions.move(file_to_process, target_path)
+        print(file_to_process)
+        print(rc.target_path)
+        actions.move(file_to_process, rc.target_path)
     elif action_performed == 'Delete':
         actions.delete(file_to_process)
     elif action_performed == 'Trash Bin':
         actions.trash_bin(file_to_process)
     elif action_performed == 'Rename':
-        actions.rename(file_to_process, rename_value)
+        actions.rename(file_to_process, rc.rename_value)
